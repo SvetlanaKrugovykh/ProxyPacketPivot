@@ -1,6 +1,6 @@
 const http = require('http')
 const httpProxy = require('http-proxy-middleware')
-const data = require('./data/netData-temp.js')
+const data = require('./data/netData.js')
 const ipRangeCheck = require('ip-range-check')
 
 for (const netData of data) {
@@ -14,8 +14,7 @@ for (const netData of data) {
     onProxyReq: (proxyReq, req, res) => {
       const sourceIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress
       const allowedIPs = [netData.client_net]
-      console.log('Source IP: ' + sourceIP)
-      console.log('Allowed IPs: ' + allowedIPs)
+      console.log(`Source IP: ${sourceIP} Allowed IPs:${allowedIPs}`)
       if (!allowedIPs.some(network => ipRangeCheck(sourceIP, network))) {
         res.writeHead(403, { 'Content-Type': 'text/plain' })
         res.end('Access denied for ' + sourceIP + '\n')
