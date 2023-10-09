@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "dnsd": "^0.9.6",
     "http": "^0.0.1-security",
     "http-proxy-middleware": "^2.0.6",
     "ip-range-check": "^0.2.0"

@@ -1,7 +1,17 @@
 const http = require('http')
+const dnsd = require('dnsd')
 const httpProxy = require('http-proxy-middleware')
-const data = require('./data/netData.js')
+const { data, dnsServerParams } = require('./data/netData.js')
 const ipRangeCheck = require('ip-range-check')
+
+const dnsServer = dnsd.createServer((req, res) => {
+  res.end(dnsServerParams.dnsTargetAddress)
+})
+
+dnsServer.listen(53, dnsServerParams.dnsServerAddress, () => {
+  console.log(`DNS server listening on ${dnsServerParams.dnsServerAddress} port 53`)
+})
+
 
 for (const netData of data) {
   const proxy = httpProxy.createProxyMiddleware({

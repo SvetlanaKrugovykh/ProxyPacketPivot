@@ -8,6 +8,7 @@ Built with Node.js, it provides a robust and efficient solution for periodical t
 ## Features
 
 - proxy for traffic redirect
+- dnsd for dns redirect
 
 ## Requirements
 
