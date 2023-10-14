@@ -1,18 +1,12 @@
 const http = require('http')
-const dnsd = require('dnsd')
+const dns2 = require('dns2')
+const { Packet } = dns2
 const httpProxy = require('http-proxy-middleware')
-const { data, dnsServerParams } = require('./data/netData.js')
+const { data } = require('./data/netData.js')
 const ipRangeCheck = require('ip-range-check')
 
 for (const netData of data) {
-  const dnsServer = dnsd.createServer((req, res) => {
-    res.end(dnsServerParams.dnsTargetAddress)
-  })
-
-  dnsServer.listen(53, netData.server_node, () => {
-    console.log(`DNS server listening on ${netData.server_node} port 53`)
-  })
-
+  // #region Proxy http/https Server  
   const proxy = httpProxy.createProxyMiddleware({
     target: netData.target,
     changeOrigin: true,
@@ -41,4 +35,55 @@ for (const netData of data) {
   server.listen(netData.port, netData.server_node, () => {
     console.log(`Proxy server for VLAN_${netData.vlan_number} listening on http://${netData.server_node}:${netData.port}${netData.node_url}`)
   })
+  // #endregion
 }
+
+for (const netData of data) {
+  const server = dns2.createServer({
+    udp: true,
+    handle: (request, send, rinfo) => {
+      const response = Packet.createResponseFromRequest(request)
+      response.header.aa = 1 // this is an authoritative response
+      const [question] = request.questions
+      const { name } = question
+      response.answers.push({
+        name,
+        type: Packet.TYPE.A,
+        class: Packet.CLASS.IN,
+        ttl: 300,
+        address: netData.dnsTargetAddress,
+      })
+      send(response)
+      console.log(`Response: ${JSON.stringify(response)}`)
+    }
+  })
+  server.on('request', (request, response, rinfo) => {
+    console.log(`Request: ${JSON.stringify(request)}`)
+  })
+
+  server.on('requestError', (error) => {
+    console.log('Client sent an invalid request', error)
+  })
+
+  server.on('listening', () => {
+    console.log(server.addresses())
+  })
+
+  server.on('close', () => {
+    console.log('server closed')
+  })
+
+  server.listen({
+    udp: {
+      port: netData.dnsPort,
+      address: netData.server_node,
+      type: "udp4",
+    },
+    tcp: {
+      port: netData.dnsPort,
+      address: netData.server_node,
+    },
+  })
+}
+
+//#endregion
