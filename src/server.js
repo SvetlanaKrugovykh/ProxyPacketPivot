@@ -54,15 +54,21 @@ for (const netData of data) {
 //#region HTTP/HTTPS
 const credentials = { key: cert.key, cert: cert.cert }
 const DEBUG_LEVEL = Number(process.env.DEBUG_LEVEL) || 0
+
 for (const netData of data) {
   const proxy = httpProxy.createProxyServer({
+    host: cert.name,
+    port: netData.port,
     target: netData.target,
     changeOrigin: true,
     xfwd: true,
+    secure: true,
   })
 
   const server = https.createServer(credentials, (req, res) => {
     proxy.web(req, res, {
+      host: cert.name,
+      port: netData.port,
       target: netData.target,
       secure: false,
     })
@@ -85,6 +91,7 @@ for (const netData of data) {
   //#region detailedLog
   if (DEBUG_LEVEL > 3) {
     proxy.on('proxyReq', function (proxyReq, req, res, options) {
+      req.url = 'https://nsrv-mx.silver-service.com.ua:8181'
       console.log('Proxy request:', req.url)
     })
     proxy.on('proxyRes', function (proxyRes, req, res) {
@@ -96,7 +103,6 @@ for (const netData of data) {
   server.listen(netData.port, netData.server_node, () => {
     console.log(`Proxy server listening on https://${netData.server_node}:${netData.port}`)
   })
-
 }
 //#endregion HTTP/HTTPS
 
