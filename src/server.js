@@ -97,27 +97,6 @@ for (const netData of data) {
     console.log(`Proxy server listening on https://${netData.server_node}:${netData.port}`)
   })
 
-  // Handle CONNECT requests for HTTPS
-  server.on('connect', (req, clientSocket, head) => {
-    const parts = req.url.split(':')
-    const targetHost = parts[0]
-    const targetPort = parseInt(parts[1], 10)
-
-    const serverSocket = net.connect(targetPort, targetHost, () => {
-      clientSocket.write('HTTP/1.1 200 Connection Established\r\n' +
-        'Proxy-agent: Node.js-Proxy\r\n' +
-        '\r\n')
-      serverSocket.write(head)
-      serverSocket.pipe(clientSocket)
-      clientSocket.pipe(serverSocket)
-    })
-
-    serverSocket.on('error', (err) => {
-      console.error(err)
-      clientSocket.end('HTTP/1.1 500 Internal Server Error\r\n\r\n')
-      clientSocket.destroy()
-    })
-  })
 }
 //#endregion HTTP/HTTPS
 
