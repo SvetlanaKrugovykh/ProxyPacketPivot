@@ -1,4 +1,5 @@
 data
+path
 .env*
 .vscode
 .idea

@@ -1,43 +1,11 @@
-const http = require('http')
+const https = require('https')
+const httpProxy = require('http-proxy')
+require('dotenv').config()
 const dns2 = require('dns2')
-const { Packet } = dns2
-const httpProxy = require('http-proxy-middleware')
-const { data } = require('./data/netData.js')
-const ipRangeCheck = require('ip-range-check')
+const Packet = dns2.Packet
+const { data, cert } = require('./data/netData.js')
 
-for (const netData of data) {
-  // #region Proxy http/https Server  
-  const proxy = httpProxy.createProxyMiddleware({
-    target: netData.target,
-    changeOrigin: true,
-    xfwd: true,
-    router: {
-      [netData.node_url]: netData.target
-    },
-    onProxyReq: (proxyReq, req, res) => {
-      const sourceIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress
-      const allowedIPs = [netData.client_net]
-      console.log(`Source IP: ${sourceIP} Allowed IPs:${allowedIPs}`)
-      if (!allowedIPs.some(network => ipRangeCheck(sourceIP, network))) {
-        res.writeHead(403, { 'Content-Type': 'text/plain' })
-        res.end('Access denied for ' + sourceIP + '\n')
-      }
-    }
-  })
-
-  const server = http.createServer((req, res) => {
-    proxy(req, res, (err) => {
-      res.writeHead(500, { 'Content-Type': 'text/plain' })
-      res.end('Something went wrong.')
-    })
-  })
-
-  server.listen(netData.port, netData.server_node, () => {
-    console.log(`Proxy server for VLAN_${netData.vlan_number} listening on http://${netData.server_node}:${netData.port}${netData.node_url}`)
-  })
-  // #endregion
-}
-
+//#region DNS
 for (const netData of data) {
   const server = dns2.createServer({
     udp: true,
@@ -79,11 +47,77 @@ for (const netData of data) {
       address: netData.server_node,
       type: "udp4",
     },
-    tcp: {
-      port: netData.dnsPort,
-      address: netData.server_node,
-    },
   })
 }
+//#endregion DNS
 
-//#endregion
+//#region HTTP/HTTPS
+const credentials = { key: cert.key, cert: cert.cert }
+const DEBUG_LEVEL = Number(process.env.DEBUG_LEVEL) || 0
+for (const netData of data) {
+  const proxy = httpProxy.createProxyServer({
+    target: netData.target,
+    changeOrigin: true,
+    xfwd: true,
+  })
+
+  const server = https.createServer(credentials, (req, res) => {
+    proxy.web(req, res, {
+      target: netData.target,
+      secure: false,
+    })
+  })
+
+  //#region errorLog
+  if (DEBUG_LEVEL > 0) {
+    server.on('request', (req, res) => {
+      console.log('Request:', req.url)
+    })
+    server.on('error', (err) => {
+      console.error('Server error:', err)
+    })
+    proxy.on('error', function (err, req, res) {
+      console.error('Proxy error:', err)
+    })
+  }
+  //#endregion errorLog
+
+  //#region detailedLog
+  if (DEBUG_LEVEL > 3) {
+    proxy.on('proxyReq', function (proxyReq, req, res, options) {
+      console.log('Proxy request:', req.url)
+    })
+    proxy.on('proxyRes', function (proxyRes, req, res) {
+      console.log('Proxy response:', req.url)
+    })
+  }
+  //#endregion detailedLog
+
+  server.listen(netData.port, netData.server_node, () => {
+    console.log(`Proxy server listening on https://${netData.server_node}:${netData.port}`)
+  })
+
+  // Handle CONNECT requests for HTTPS
+  server.on('connect', (req, clientSocket, head) => {
+    const parts = req.url.split(':')
+    const targetHost = parts[0]
+    const targetPort = parseInt(parts[1], 10)
+
+    const serverSocket = net.connect(targetPort, targetHost, () => {
+      clientSocket.write('HTTP/1.1 200 Connection Established\r\n' +
+        'Proxy-agent: Node.js-Proxy\r\n' +
+        '\r\n')
+      serverSocket.write(head)
+      serverSocket.pipe(clientSocket)
+      clientSocket.pipe(serverSocket)
+    })
+
+    serverSocket.on('error', (err) => {
+      console.error(err)
+      clientSocket.end('HTTP/1.1 500 Internal Server Error\r\n\r\n')
+      clientSocket.destroy()
+    })
+  })
+}
+//#endregion HTTP/HTTPS
+
