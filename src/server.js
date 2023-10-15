@@ -91,7 +91,7 @@ for (const netData of data) {
   //#region detailedLog
   if (DEBUG_LEVEL > 3) {
     proxy.on('proxyReq', function (proxyReq, req, res, options) {
-      req.url = 'https://nsrv-mx.silver-service.com.ua:8181'
+      req.url = cert.name
       console.log('Proxy request:', req.url)
     })
     proxy.on('proxyRes', function (proxyRes, req, res) {
