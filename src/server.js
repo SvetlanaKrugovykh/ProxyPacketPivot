@@ -57,8 +57,8 @@ const DEBUG_LEVEL = Number(process.env.DEBUG_LEVEL) || 0
 
 for (const netData of data) {
   const proxy = httpProxy.createProxyServer({
-    host: cert.name,
-    port: netData.port,
+    host: netData.target,
+    port: netData.target_port,
     target: netData.target,
     changeOrigin: true,
     xfwd: true,
@@ -67,9 +67,8 @@ for (const netData of data) {
 
   const server = https.createServer(credentials, (req, res) => {
     proxy.web(req, res, {
-      host: cert.name,
-      port: netData.port,
       target: netData.target,
+      port: netData.target_port,
       secure: false,
     })
   })
@@ -83,17 +82,20 @@ for (const netData of data) {
       console.error('Server error:', err)
     })
     proxy.on('error', function (err, req, res) {
-      console.error('Proxy error:', err)
+      console.error('Proxy error:', err);
+      if (err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
+        console.error('The root CA certificate might not be trusted.');
+      }
     })
   }
   //#endregion errorLog
+  proxy.on('proxyReq', function (proxyReq, req, res, options) {
+    req.url = netData.target //cert.name
+    console.log('Proxy request:', req.url)
+  })
 
   //#region detailedLog
   if (DEBUG_LEVEL > 3) {
-    proxy.on('proxyReq', function (proxyReq, req, res, options) {
-      req.url = cert.name
-      console.log('Proxy request:', req.url)
-    })
     proxy.on('proxyRes', function (proxyRes, req, res) {
       console.log('Proxy response:', req.url)
     })
