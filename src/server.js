@@ -4,6 +4,7 @@ require('dotenv').config()
 const dns2 = require('dns2')
 const Packet = dns2.Packet
 const { data, cert } = require('./data/netData.js')
+const DEBUG_LEVEL = Number(process.env.DEBUG_LEVEL) || 0
 
 //#region DNS
 for (const netData of data) {
@@ -22,11 +23,11 @@ for (const netData of data) {
         address: netData.dnsTargetAddress,
       })
       send(response)
-      //console.log(`Response: ${JSON.stringify(response)}`)
+      if (DEBUG_LEVEL === 7) console.log(`Response: ${JSON.stringify(response)}`)
     }
   })
   server.on('request', (request, response, rinfo) => {
-    console.log(`Request: ${JSON.stringify(request)}`)
+    if (DEBUG_LEVEL === 7) console.log(`Request: ${JSON.stringify(request)}`)
   })
 
   server.on('requestError', (error) => {
@@ -53,7 +54,6 @@ for (const netData of data) {
 
 //#region HTTP/HTTPS
 const credentials = { key: cert.key, cert: cert.cert }
-const DEBUG_LEVEL = Number(process.env.DEBUG_LEVEL) || 0
 
 for (const netData of data) {
   const proxy = httpProxy.createProxyServer({
