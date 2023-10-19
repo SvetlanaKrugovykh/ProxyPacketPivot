@@ -69,7 +69,7 @@ for (const netData of data) {
     proxy.web(req, res, {
       target: netData.target,
       port: netData.target_port,
-      secure: false,
+      secure: true,
     })
   })
 
