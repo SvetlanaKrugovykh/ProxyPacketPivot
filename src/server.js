@@ -22,7 +22,7 @@ for (const netData of data) {
         address: netData.dnsTargetAddress,
       })
       send(response)
-      console.log(`Response: ${JSON.stringify(response)}`)
+      //console.log(`Response: ${JSON.stringify(response)}`)
     }
   })
   server.on('request', (request, response, rinfo) => {
