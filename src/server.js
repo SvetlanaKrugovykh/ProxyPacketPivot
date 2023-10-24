@@ -21,7 +21,7 @@ for (const netData of data) {
         type: Packet.TYPE.A,
         class: Packet.CLASS.IN,
         ttl: 300,
-        address: netData.dnsTargetAddress,
+        address: netData.proxyIP,
       })
       send(response)
       if (DEBUG_LEVEL === 7) console.log(`Response: ${JSON.stringify(response)}`)
