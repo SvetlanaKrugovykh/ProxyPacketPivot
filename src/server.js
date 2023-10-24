@@ -10,13 +10,14 @@ const DEBUG_LEVEL = Number(process.env.DEBUG_LEVEL) || 0
 for (const netData of data) {
   const server = dns2.createServer({
     udp: true,
+    tcp: true,
     handle: (request, send, rinfo) => {
       const response = Packet.createResponseFromRequest(request)
       response.header.aa = 1 // this is an authoritative response
       const [question] = request.questions
       const { name } = question
       response.answers.push({
-        name,
+        name: netData.proxyName,
         type: Packet.TYPE.A,
         class: Packet.CLASS.IN,
         ttl: 300,
