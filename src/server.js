@@ -17,6 +17,7 @@ for (const netData of data) {
       response.header.aa = 1 // this is an authoritative response
       const [question] = request.questions
       const { name } = question
+      if (DEBUG_LEVEL === 3) console.log(`Question at ${currentTime}: ${name}`)
       response.answers.push({
         name: netData.proxyName,
         type: Packet.TYPE.A,
