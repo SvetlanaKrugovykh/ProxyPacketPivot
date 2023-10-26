@@ -19,7 +19,7 @@ for (const netData of data) {
       const { name } = question
       if (DEBUG_LEVEL === 3) console.log(`Question at ${currentTime}: ${name}`)
       response.answers.push({
-        name: netData.dnsTargetName,
+        name: name, //netData.dnsTargetName,
         type: Packet.TYPE.A,
         class: Packet.CLASS.IN,
         ttl: 300,
