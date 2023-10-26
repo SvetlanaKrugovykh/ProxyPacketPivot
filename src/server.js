@@ -19,11 +19,11 @@ for (const netData of data) {
       const { name } = question
       if (DEBUG_LEVEL === 3) console.log(`Question at ${currentTime}: ${name}`)
       response.answers.push({
-        name: name, //netData.dnsTargetName,
+        name: netData.proxyName, //netData.dnsTargetName,
         type: Packet.TYPE.A,
         class: Packet.CLASS.IN,
         ttl: 300,
-        address: netData.dnsTargetAddress,
+        address: netData.proxyIP,
       })
       send(response)
       if (DEBUG_LEVEL === 7) console.log(`Response at ${currentTime}: ${JSON.stringify(response)}`)
